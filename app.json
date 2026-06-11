@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Accessibility Assistant",
+    "slug": "accessibility-assistant",
+    "scheme": "accessibilityassistant",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#09263D"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses camera to provide accessibility guidance.",
+        "NSMicrophoneUsageDescription": "Cette app utilise le micro pour l’assistant vocal.",
+        "NSSpeechRecognitionUsageDescription": "Cette app utilise la reconnaissance vocale pour comprendre l’utilisateur.",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      },
+      "bundleIdentifier": "com.mohamedmarzouk.accessibilityassistant"
+    },
+    "android": {
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.accessibilityassistant"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-dev-client",
+      "expo-av",
+      "expo-speech-recognition"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ee8b72cb-b9be-425f-8e66-fa5573f6f4ed"
+      }
+    }
+  }
+}
