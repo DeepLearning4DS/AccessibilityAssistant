@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Street Safety — Vision Assistant</title>
+  <style>
+    :root {
+      --red:    #e53e3e;
+      --yellow: #d69e2e;
+      --green:  #38a169;
+      --bg:     #0f0f0f;
+      --card:   #1a1a1a;
+      --text:   #f0f0f0;
+      --muted:  #888;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      transition: background 0.4s ease;
+    }
+
+    body.RED    { background: #1a0000; }
+    body.YELLOW { background: #1a1400; }
+    body.GREEN  { background: #001a08; }
+
+    /* ── Header ──────────────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    header p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 6px;
+    }
+
+    /* ── Language Switch ─────────────────────────────────────────────── */
+    .lang-switch {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .lang-btn {
+      padding: 6px 18px;
+      border-radius: 999px;
+      border: 2px solid #333;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    .lang-btn.active {
+      border-color: #555;
+      background: #333;
+    }
+
+    /* ── Mode Tabs ───────────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid #2a2a2a;
+      margin-bottom: 24px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      background: var(--card);
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: #2a2a2a;
+      color: var(--text);
+    }
+
+    /* ── Cards ───────────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 16px;
+      border: 1px solid #2a2a2a;
+    }
+
+    /* ── Upload Zone ─────────────────────────────────────────────────── */
+    .upload-zone {
+      border: 2px dashed #333;
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .upload-zone:hover { border-color: #555; }
+    .upload-zone input { display: none; }
+    .upload-zone .icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .upload-zone p { color: var(--muted); font-size: 0.9rem; }
+
+    /* ── Preview image ───────────────────────────────────────────────── */
+    #preview-img {
+      width: 100%;
+      border-radius: 10px;
+      display: none;
+      margin-top: 12px;
+      max-height: 260px;
+      object-fit: cover;
+    }
+
+    /* ── Live section ────────────────────────────────────────────────── */
+    #video-container {
+      position: relative;
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #000;
+      display: none;
+    }
+    video {
+      width: 100%;
+      display: block;
+      max-height: 260px;
+      object-fit: cover;
+    }
+    #live-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: #e53e3e;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      display: none;
+    }
+    #live-badge.active { display: block; }
+    canvas { display: none; }
+
+    /* ── Buttons ─────────────────────────────────────────────────────── */
+    .btn {
+      display: block;
+      width: 100%;
+      max-width: 480px;
+      padding: 14px;
+      border-radius: var(--radius);
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-bottom: 12px;
+    }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+    .btn-primary  { background: #4a5568; color: #fff; }
+    .btn-live     { background: #2d3748; color: #fff; }
+    .btn-stop     { background: #742a2a; color: #fff; display: none; }
+    .btn-analyze  { background: #2b4c2b; color: #fff; }
+
+    /* ── Alert Panel ─────────────────────────────────────────────────── */
+    #alert-panel {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .danger-badge {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .badge-RED    { background: var(--red);    color: #fff; }
+    .badge-YELLOW { background: var(--yellow); color: #000; }
+    .badge-GREEN  { background: var(--green);  color: #fff; }
+
+    #alert-text {
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    #alert-text.ar {
+      direction: rtl;
+      font-family: "Amiri", "Noto Naskh Arabic", serif;
+      font-size: 1.4rem;
+    }
+
+    .speak-btn {
+      background: none;
+      border: 1px solid #333;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+    .speak-btn:hover { border-color: #555; color: var(--text); }
+
+    /* ── Object list ─────────────────────────────────────────────────── */
+    .obj-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .obj-tag {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .obj-tag.CLOSE { background: #3d1515; color: #fc8181; }
+    .obj-tag.FAR   { background: #1a2535; color: #90cdf4; }
+
+    /* ── Timing ──────────────────────────────────────────────────────── */
+    #timing {
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-align: right;
+      margin-top: 8px;
+    }
+
+    /* ── Loading ─────────────────────────────────────────────────────── */
+    #loading {
+      display: none;
+      text-align: center;
+      color: var(--muted);
+      padding: 20px;
+      font-size: 0.9rem;
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2px solid #333;
+      border-top-color: #888;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error ───────────────────────────────────────────────────────── */
+    #error-msg {
+      display: none;
+      background: #2d1515;
+      border: 1px solid #742a2a;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      color: #fc8181;
+      font-size: 0.85rem;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🦺 Street Safety</h1>
+    <p>Assistante visuelle pour personnes malvoyantes</p>
+  </header>
+
+  <!-- Language Switch -->
+  <div class="lang-switch">
+    <button class="lang-btn active" onclick="setLang('fr')">Français</button>
+    <button class="lang-btn" onclick="setLang('ar')">العربية</button>
+  </div>
+
+  <!-- Mode Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="setMode('upload')">📁 Upload</button>
+    <button class="tab" onclick="setMode('live')">📷 Live</button>
+  </div>
+
+  <!-- Upload Mode -->
+  <div class="card" id="upload-card">
+    <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="icon">🖼️</div>
+      <p>Cliquer pour choisir une image</p>
+      <input type="file" id="file-input" accept="image/*" onchange="onFileSelected(event)" />
+    </div>
+    <img id="preview-img" alt="Image sélectionnée" />
+  </div>
+  <button class="btn btn-primary" id="analyze-btn" onclick="analyzeUpload()" disabled>
+    🔍 Analyser l'image
+  </button>
+
+  <!-- Live Mode -->
+  <div class="card" id="live-card" style="display:none">
+    <div id="video-container">
+      <video id="video" autoplay playsinline></video>
+      <div id="live-badge">⬤ LIVE</div>
+      <canvas id="canvas"></canvas>
+    </div>
+    <div style="color:var(--muted);font-size:0.8rem;margin-top:8px;text-align:center">
+      1 analyse toutes les 2 secondes
+    </div>
+  </div>
+  <button class="btn btn-live" id="start-live-btn" onclick="startLive()">
+    📷 Démarrer la caméra
+  </button>
+  <button class="btn btn-stop" id="stop-live-btn" onclick="stopLive()">
+    ⏹ Arrêter
+  </button>
+
+  <!-- Loading -->
+  <div id="loading">
+    <span class="spinner"></span> Analyse en cours...
+  </div>
+
+  <!-- Error -->
+  <div id="error-msg"></div>
+
+  <!-- Alert Panel -->
+  <div id="alert-panel" class="card">
+    <span id="danger-badge" class="danger-badge"></span>
+    <div id="alert-text"></div>
+    <button class="speak-btn" onclick="speak()">🔊 Écouter</button>
+
+    <div style="color:var(--muted);font-size:0.8rem;margin-bottom:6px;">Objets détectés :</div>
+    <div class="obj-list" id="obj-list"></div>
+    <div id="timing"></div>
+  </div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let currentLang  = 'fr';
+  let currentMode  = 'upload';
+  let liveStream   = null;
+  let liveInterval = null;
+  let lastResult   = null;
+  let selectedFile = null;
+
+  const API = 'http://localhost:8742';
+
+  // ── Language ───────────────────────────────────────────────────────────────
+  function setLang(lang) {
+    currentLang = lang;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+    if (lastResult) renderResult(lastResult);
+  }
+
+  // ── Mode ───────────────────────────────────────────────────────────────────
+  function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.tab[onclick="setMode('${mode}')"]`).classList.add('active');
+
+    document.getElementById('upload-card').style.display   = mode === 'upload' ? '' : 'none';
+    document.getElementById('analyze-btn').style.display   = mode === 'upload' ? '' : 'none';
+    document.getElementById('live-card').style.display     = mode === 'live'   ? '' : 'none';
+    document.getElementById('start-live-btn').style.display = mode === 'live'  ? '' : 'none';
+    document.getElementById('stop-live-btn').style.display  = 'none';
+
+    if (mode === 'upload' && liveStream) stopLive();
+  }
+
+  // ── File Upload ────────────────────────────────────────────────────────────
+  function onFileSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    selectedFile = file;
+    const img = document.getElementById('preview-img');
+    img.src     = URL.createObjectURL(file);
+    img.style.display = 'block';
+    document.getElementById('analyze-btn').disabled = false;
+    hideAlert();
+  }
+
+  async function analyzeUpload() {
+    if (!selectedFile) return;
+    showLoading();
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    await callAPI(formData);
+  }
+
+  // ── Live Mode ──────────────────────────────────────────────────────────────
+  async function startLive() {
+    try {
+      liveStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      document.getElementById('video').srcObject = liveStream;
+      document.getElementById('video-container').style.display = 'block';
+      document.getElementById('live-badge').classList.add('active');
+      document.getElementById('start-live-btn').style.display = 'none';
+      document.getElementById('stop-live-btn').style.display  = '';
+
+      // Start capture loop every 2s
+      liveInterval = setInterval(captureAndAnalyze, 2000);
+    } catch (e) {
+      showError('Impossible d\'accéder à la caméra : ' + e.message);
+    }
+  }
+
+  function stopLive() {
+    clearInterval(liveInterval);
+    if (liveStream) { liveStream.getTracks().forEach(t => t.stop()); liveStream = null; }
+    document.getElementById('video-container').style.display = 'none';
+    document.getElementById('live-badge').classList.remove('active');
+    document.getElementById('start-live-btn').style.display = '';
+    document.getElementById('stop-live-btn').style.display  = 'none';
+  }
+
+  async function captureAndAnalyze() {
+    const video  = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    canvas.toBlob(async (blob) => {
+      const formData = new FormData();
+      formData.append('file', blob, 'frame.jpg');
+      await callAPI(formData, /*silent=*/true);
+    }, 'image/jpeg', 0.85);
+  }
+
+  // ── API Call ───────────────────────────────────────────────────────────────
+  async function callAPI(formData, silent = false) {
+    if (!silent) showLoading();
+    hideError();
+    try {
+      const resp = await fetch(`${API}/analyze`, { method: 'POST', body: formData });
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.detail || resp.statusText);
+      }
+      const data = await resp.json();
+      lastResult = data;
+      renderResult(data);
+      autoSpeak(data);
+    } catch (e) {
+      showError('Erreur : ' + e.message);
+    } finally {
+      hideLoading();
+    }
+  }
+
+  // ── Render Result ──────────────────────────────────────────────────────────
+  function renderResult(data) {
+    const level = data.danger_level;
+    const alert = currentLang === 'fr' ? data.alert_fr : data.alert_ar;
+
+    // Body background
+    document.body.className = level;
+
+    // Badge
+    const badge = document.getElementById('danger-badge');
+    badge.textContent = level === 'RED' ? '🔴 DANGER' : level === 'YELLOW' ? '🟡 ATTENTION' : '🟢 LIBRE';
+    badge.className = `danger-badge badge-${level}`;
+
+    // Alert text
+    const alertEl = document.getElementById('alert-text');
+    alertEl.textContent  = alert;
+    alertEl.className    = currentLang === 'ar' ? 'ar' : '';
+    alertEl.dir          = currentLang === 'ar' ? 'rtl' : 'ltr';
+
+    // Objects
+    const objList = document.getElementById('obj-list');
+    objList.innerHTML = (data.objects || []).map(o =>
+      `<span class="obj-tag ${o.proximity}">${o.label} ${o.proximity === 'CLOSE' ? '⚠️' : ''}</span>`
+    ).join('');
+
+    // Timing
+    document.getElementById('timing').textContent =
+      `⏱ ${data.processing_time_ms} ms`;
+
+    // Show panel
+    document.getElementById('alert-panel').style.display = '';
+  }
+
+  // ── Text-to-Speech ─────────────────────────────────────────────────────────
+  function speak() {
+    if (!lastResult) return;
+    const text = currentLang === 'fr' ? lastResult.alert_fr : lastResult.alert_ar;
+    const lang = currentLang === 'fr' ? 'fr-FR' : 'ar-SA';
+    utterance(text, lang);
+  }
+
+  function autoSpeak(data) {
+    // Auto-speak on RED or YELLOW
+    if (!data || data.danger_level === 'GREEN') return;
+    const text = currentLang === 'fr' ? data.alert_fr : data.alert_ar;
+    const lang = currentLang === 'fr' ? 'fr-FR' : 'ar-SA';
+    utterance(text, lang);
+  }
+
+  function utterance(text, lang) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang;
+    u.rate = 0.95;
+    window.speechSynthesis.speak(u);
+  }
+
+  // ── UI Helpers ─────────────────────────────────────────────────────────────
+  function showLoading()  { document.getElementById('loading').style.display = ''; }
+  function hideLoading()  { document.getElementById('loading').style.display = 'none'; }
+  function hideAlert()    { document.getElementById('alert-panel').style.display = 'none'; document.body.className = ''; }
+  function showError(msg) { const el = document.getElementById('error-msg'); el.textContent = msg; el.style.display = ''; }
+  function hideError()    { document.getElementById('error-msg').style.display = 'none'; }
+</script>
+</body>
+</html>
